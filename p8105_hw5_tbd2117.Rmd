@@ -222,5 +222,5 @@ output_reject %>%
   )
 ```
 
-The sample average of μ̂ across tests for which the null is rejected
+The sample average of μ̂ across tests for which the null is not approximately equal to the true value of μ, because samples that rejected the null have larger means when compared tot he overall simulated distribution.
 
