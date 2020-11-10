@@ -25,3 +25,16 @@ scale_fill_discrete = scale_fill_viridis_d
 ```
 
 ### Problem 1
+
+Loading homicide data and adjusting `report_date` variable
+
+```{r, message = FALSE}
+homicide = 
+  read_csv("./data/homicide-data.csv") %>% 
+  separate(reported_date, into = c("year", "month", "day"), sep = c(4, 6))
+
+view(homicide)
+```
+
+The `homicide` dataset has `r nrow(homicide)` rows and `r ncol(homicide)` columns with data on homicides in 50 large U.S. cities gathered be _The Washington Post_ from `r min(pull(homicide, year))` to `r max(pull(homicide, year))`.
+
