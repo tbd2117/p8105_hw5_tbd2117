@@ -26,15 +26,95 @@ scale_fill_discrete = scale_fill_viridis_d
 
 ### Problem 1
 
-Loading homicide data and adjusting `report_date` variable
+Loading homicide data, adjusting `report_date` variable, and creating `city_state` variable
 
 ```{r, message = FALSE}
 homicide = 
   read_csv("./data/homicide-data.csv") %>% 
-  separate(reported_date, into = c("year", "month", "day"), sep = c(4, 6))
-
-view(homicide)
+  separate(reported_date, into = c("year", "month", "day"), sep = c(4, 6)) %>% 
+  mutate(city_state = str_c(city, ", ", state)) %>% 
+  filter(!city_state == "Tulsa, AL") # n = 1, probable input error
 ```
 
-The `homicide` dataset has `r nrow(homicide)` rows and `r ncol(homicide)` columns with data on homicides in 50 large U.S. cities gathered be _The Washington Post_ from `r min(pull(homicide, year))` to `r max(pull(homicide, year))`.
+The **homicide** dataset has `r nrow(homicide)` rows and `r ncol(homicide)` columns with data on homicides in 50 large U.S. cities gathered by the _Washington Post_ from `r min(pull(homicide, year))` to `r max(pull(homicide, year))`.
+
+Creating variables to count total and unsolved homicides.
+
+```{r}
+homicide_city = 
+  homicide %>% 
+    group_by(city_state) %>%
+    summarise(
+      total_homicides = n(),
+      unsolved_homicides = 
+        sum(
+          str_count(disposition, "Closed without arrest"), 
+          str_count(disposition, "Open/No arrest")
+        )
+    )
+```
+
+Baltimore, MD estimated proportion (95%CI) of unsolved homicides:
+
+```{r}
+prop.test(
+  homicide_city %>% filter(city_state == "Baltimore, MD") %>% pull(unsolved_homicides),
+   homicide_city %>% filter(city_state == "Baltimore, MD") %>% pull(total_homicides)
+) %>% 
+  broom::tidy() %>% 
+  select(estimate, conf.low, conf.high)
+```
+
+Iterating for all cities:
+
+```{r}
+city_results = 
+homicide_city %>% 
+  mutate(
+    prop_test = map2(.x = unsolved_homicides, .y = total_homicides, ~prop.test(x = .x, n = .y)),
+    tidy_test = map(.x = prop_test, ~broom::tidy(.x))
+  ) %>% 
+  unnest(tidy_test) %>% 
+  select(city_state, estimate, conf.low, conf.high)
+```
+
+Plotting estimates and CIs for each city:
+
+```{r}
+city_results %>% 
+  mutate(city_state = fct_reorder(city_state, desc(estimate))) %>% 
+  ggplot(aes(x = city_state, y = estimate))+
+  geom_point()+
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high))+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))+
+  labs(
+    x = "City, State",
+    y = "Estimated Proportion of \n Unsolved Homicides (95%CI)"
+  )
+```
+
+## Problem 2
+
+```{r}
+data1 = read_csv("./data/long_data/con_01.csv")
+
+path_df = 
+  tibble(
+    path = list.files("./data/long_data")
+  ) %>% 
+  mutate(path = str_c("./data/long_data/",path),
+  data = map(path, read_csv)) %>% 
+  unnest(data)
+
+
+# pivot
+```
+
+
+## Problem 3
+
+
+```{r}
+
+```
 
